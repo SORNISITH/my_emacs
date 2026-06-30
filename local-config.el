@@ -1,0 +1,63 @@
+;;; local-config.el --- DESCRIPTION -*- no-byte-compile: t; lexical-binding: t; -*-
+;; Display the current line and column numbers in the mode line
+(setq line-number-mode t)
+(setq column-number-mode t)
+(setq mode-line-position-column-line-format '("%l:C"))
+(setq-default mode-line-buffer-identification nil)
+(setq select-enable-clipboard t)
+(setq select-enable-primary t)
+(setq dired-movement-style 'bounded-files)
+;; (windmove-default-keybindings)
+(global-display-line-numbers-mode)
+(delete-selection-mode 1)
+;(defun my-code-move-keys ()
+;   (local-set-key (kbd "M-p") 'next-line)
+;   (local-set-key (kbd "M-n") 'previous-line)
+;
+; (add-hook 'prog-mode-hook 'my-code-move-keys)
+;
+
+(setq switch-to-buffer-obey-display-actions t)
+(tab-bar-mode -1)
+(blink-cursor-mode 1)
+(setq compilation-scroll-output t)
+(setq blink-cursor-interval 0.2 )
+
+(defun nz-reload ()
+  (interactive)
+  (load-file user-init-file))
+(defun nz-conf ()
+  (interactive)
+  (dired "~/.emacs.d/"))
+
+(defun nz-cheat ()
+  (interactive)
+  (require 'consult)
+  (dired "~/.emacs.d/cheatsheet/")
+  (run-at-time 0.1 nil #'consult-line))
+
+;; GLOBAL KEYS
+(global-unset-key (kbd "C-z"))
+(global-unset-key (kbd "M-/"))
+(global-unset-key (kbd "C-SPC"))
+(global-unset-key (kbd "C-x C-p"))
+(global-set-key (kbd "C-c p") 'compile)
+(global-set-key (kbd "C-z") 'undo-fu-only-undo)
+(global-set-key (kbd "C-S-z") 'undo-fu-only-redo)
+(global-set-key (kbd "M-o") 'other-window)
+(global-set-key (kbd "C-x k") 'kill-current-buffer)
+(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
+(global-set-key (kbd "C-q") 'kill-current-buffer)
+(global-set-key (kbd "C-<return>") 'vterm)
+(global-set-key (kbd "C-,") 'flycheck-next-error)
+(global-set-key (kbd "C-l") 'consult-line)
+(global-set-key (kbd "C-j") 'consult-buffer)
+(global-set-key (kbd "M-/") 'consult-ripgrep)
+(global-set-key (kbd "C-SPC") 'avy-goto-char)
+(global-set-key (kbd "M-l") 'consult-line)
+(global-set-key (kbd "C-=") 'quickrun)
+(global-set-key (kbd "M-p") 'next-buffer)
+(global-set-key (kbd "M-n") 'previous-buffer)
+
+
+(set-face-attribute 'default nil :height 170  :family "Iosevka")
