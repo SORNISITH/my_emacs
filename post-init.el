@@ -174,16 +174,15 @@
 ;;; useful.el --- DESCRIPTION -*- no-byte-compile: t; lexical-binding: t; -*-
 ;;; Enable automatic insertion and management of matching pairs of characters
 ;;; (e.g., (), {}, "") globally using `electric-pair-mode'.
-;; (use-package elec-pair
-;;   :ensure nil
-;;   :commands (electric-pair-mode
-;;              electric-pair-local-mode
-;;              electric-pair-delete-pair)
-;;   :hook (after-init . electric-pair-mode))
-;; (electric-indent-mode -1)
+(use-package elec-pair
+  :ensure nil
+  :commands (electric-pair-mode
+             electric-pair-local-mode
+             electric-pair-delete-pair)
+  :hook (after-init . electric-pair-mode))
+(electric-indent-mode -1)
 ;; Allow Emacs to upgrade built-in packages, such as Org mode
 (setq package-install-upgrade-built-in t)
-
 ;; When Delete Selection mode is enabled, typed text replaces the selection
 ;; if the selection is active.
 (delete-selection-mode 1)
@@ -406,7 +405,7 @@
   :straight t
   :defer t
   :hook (kubed-display-resource-mode . yaml-mode)
-  :hook (yaml-mode . apheleia-mode)
+;  :hook (yaml-mode . apheleia-mode)
   :mode "\\.yml\\'"
   :mode "\\.yaml\\'")
 
@@ -480,6 +479,7 @@
   :hook ((css-mode  . emmet-mode)
          (html-mode . emmet-mode)
          (web-mode  . emmet-mode)
+         (templ-ts-mode  . emmet-mode)
          (sass-mode . emmet-mode)
          (scss-mode . emmet-mode)
          (web-mode  . emmet-mode))
@@ -593,6 +593,9 @@
   :custom-face
   (yas-field-highlight-face ((t (:background "#2a2a3a")))))
 
+
+(use-package yasnippet
+  :hook (templ-ts-mode . yas-minor-mode))
 (use-package yasnippet-snippets
   :straight t
   :after yasnippet
@@ -1333,7 +1336,7 @@
 ;;         '("goimports"))
 ;;   (apheleia-global-mode))
 
-
+(use-package restclient) 
 ;; FLYCHECK -------------------------------------------------------------------------------------------------------------------
 (use-package flycheck
   :straight t
@@ -1742,7 +1745,7 @@
          (tsx-ts-mode . lsp-deferred)
          (typescript-ts-mode . lsp-deferred)
          ;; (python-mode . lsp-deferred)
-         ;; (lsp-mode . lsp-deferred)
+         (templ-ts-mode . lsp-deferred)
          ;; (python-ts-mode . lsp-deferred)
          )
   :commands (lsp lsp-deferred)
@@ -1760,16 +1763,15 @@
   (lsp-log-io nil)                                  ; IMPORTANT! Use only for debugging! Drastically affects performance
   (lsp-keep-workspace-alive nil)                    ; Close LSP server if all project buffers are closed
   (lsp-idle-delay 0.5)                             ; Debounce timer for `after-change-function'
-
   ;; core
   (lsp-enable-xref t)                              ; Use xref to find references
   (lsp-auto-configure t)                           ; Used to decide between current active servers
   ;; (lsp-eldoc-enable-hover t)                       ; Display signature information in the echo area
   (lsp-enable-dap-auto-configure nil)              ; Debug support
   (lsp-enable-file-watchers t)
-  (lsp-file-watch-threshold 2000)
+  (lsp-file-watch-threshold 1000)
   (lsp-file-watch-ignored-directories '("[/\\\\]\\.git$" "[/\\\\]vendor$" "[/\\\\]node_modules$" "[/\\\\]\\.cache$"))
-  (lsp-enable-folding t)
+  (lsp-enable-folding nil)
   (lsp-enable-imenu t)
   (lsp-enable-indentation nil)                     ; I use prettier
   (lsp-enable-links nil)                           ; No need since we have `browse-url'
@@ -1837,6 +1839,24 @@
   (add-hook 'python-ts-mode-hook
             (lambda () (require 'lsp-pyright) (lsp-deferred))))
 
+(use-package lsp-mode
+  :hook ((templ-ts-mode . lsp-deferred)
+         (go-mode . lsp-deferred))
+  :commands lsp)
+
+(with-eval-after-load 'lsp-mode
+  (lsp-register-client
+   (make-lsp-client
+    :new-connection (lsp-stdio-connection "templ")
+    :major-modes '(templ-ts-mode)
+    :server-id 'templ-ls
+    :activation-fn (lsp-activate-on "templ"))))
+
+
+
+(setq web-mode-enable-auto-indentation nil)
+(setq lsp-enable-indentation nil)
+
 (use-package lsp-tailwindcss
   :straight (:type git :host github :repo "merrickluo/lsp-tailwindcss")
   :defer t
@@ -1866,6 +1886,8 @@
   :bind (:map lsp-mode-map
               ([remap xref-find-apropos] . consult-lsp-symbols)))
 
+(setq lsp-go-analyses '((shadow . t)
+                        (simplifycompositelit . :json-false)))
 
 (setq lsp-file-watch-ignored-directories
       '("[/\\\\]\\.git$"
@@ -1882,7 +1904,32 @@
 
 (setq lsp-file-watch-ignored-files
       '("[/\\\\]\\.\\(json\\|md\\|txt\\)$"
-        "[/\\\\]node_modules[/\\\\]"))
+        "[/\\\\]node_modules[/\\\\]"
+    "[/\\\\]\\.git\\'" "[/\\\\]\\.github\\'" "[/\\\\]\\.gitlab\\'"
+    "[/\\\\]\\.circleci\\'" "[/\\\\]\\.hg\\'" "[/\\\\]\\.bzr\\'" "[/\\\\]_darcs\\'"
+    "[/\\\\]\\.svn\\'" "[/\\\\]_FOSSIL_\\'" "[/\\\\]\\.jj\\'" "[/\\\\]\\.idea\\'"
+    "[/\\\\]\\.ensime_cache\\'" "[/\\\\]\\.eunit\\'" "[/\\\\]node_modules"
+    "[/\\\\]\\.yarn\\'" "[/\\\\]\\.turbo\\'" "[/\\\\]\\.fslckout\\'"
+    "[/\\\\]\\.tox\\'" "[/\\\\]\\.nox\\'" "[/\\\\]dist\\'"
+    "[/\\\\]dist-newstyle\\'" "[/\\\\]\\.hifiles\\'" "[/\\\\]\\.hiefiles\\'"
+    "[/\\\\]\\.stack-work\\'" "[/\\\\]\\.bloop\\'" "[/\\\\]\\.bsp\\'"
+    "[/\\\\]\\.metals\\'" "[/\\\\]target\\'" "[/\\\\]\\.ccls-cache\\'"
+    "[/\\\\]\\.vs\\'" "[/\\\\]\\.vscode\\'" "[/\\\\]\\.venv\\'"
+    "[/\\\\]\\.mypy_cache\\'" "[/\\\\]\\.pytest_cache\\'" "[/\\\\]\\.build\\'"
+    "[/\\\\]__pycache__\\'" "[/\\\\]site-packages\\'" "[/\\\\].pyenv\\'"
+    "[/\\\\]\\.deps\\'" "[/\\\\]build-aux\\'" "[/\\\\]autom4te.cache\\'"
+    "[/\\\\]\\.reference\\'" "[/\\\\]bazel-[^/\\\\]+\\'"
+    "[/\\\\]\\.cache[/\\\\]lsp-csharp\\'" "[/\\\\]\\.meta\\'" "[/\\\\]\\.nuget\\'"
+    "[/\\\\]\\.lake\\'" "[/\\\\]Library\\'" "[/\\\\]\\.lsp\\'"
+    "[/\\\\]\\.clj-kondo\\'" "[/\\\\]\\.shadow-cljs\\'" "[/\\\\]\\.babel_cache\\'"
+    "[/\\\\]\\.cpcache\\'" "[/\\\\]\\checkouts\\'" "[/\\\\]\\.gradle\\'"
+    "[/\\\\]\\.m2\\'" "[/\\\\]bin/Debug\\'" "[/\\\\]obj\\'" "[/\\\\]_opam\\'"
+    "[/\\\\]_build\\'" "[/\\\\]\\.elixir_ls\\'" "[/\\\\]\\.elixir-tools\\'"
+    "[/\\\\]\\.terraform\\'" "[/\\\\]\\.terragrunt-cache\\'" "[/\\\\]\\result"
+    "[/\\\\]\\result-bin" "[/\\\\]\\.direnv\\'" "[/\\\\]\\.devenv\\'"
+))
+
+
 (setq lsp-enable-on-type-formatting nil)
 (setq lsp-format-buffer nil)
 
@@ -1912,6 +1959,7 @@
   (setq quick-sdcv-dictionary-prefix-symbol "►")
 
   ;; Change the quick-sdcv dictionaries ellipsis from … to " ▼"
+
   ;; (In quick-sdcv buffers, `outline-minor-mode' is enabled by default, which
   ;; allows sections corresponding to individual dictionaries to be folded. The
   ;; ellipsis … indicates a folded section, making it easy to collapse all
@@ -1974,15 +2022,35 @@
     t))
 (setq easysession-save-mode-predicate 'my-easysession-only-main-saved)
 
+
 ;; EAF framework --------------------------------------------------------
 (add-to-list 'load-path "~/.emacs.d/site-lisp/emacs-application-framework/")
-(require 'eaf)
-(require 'eaf-browser)
-(require 'eaf-pdf-viewer)
+
+;; Safe require - won't error if package is missing
+(require 'eaf nil t)           ; t = no error if not found
+(require 'eaf-browser nil t)
+(require 'eaf-pdf-viewer nil t)
+
 (defun my/org-display-math ()
   (interactive)
-  (insert "\\[  \\]")
+  (insert "\\[ \\]")
   (backward-char 3))
+
+(use-package templ-ts-mode
+  :straight (templ-ts-mode :type git :host github :repo "danderson/templ-ts-mode")
+  :mode "\\.templ\\'")
+(add-to-list 'treesit-language-source-alist
+             '(templ "https://github.com/vrischmann/tree-sitter-templ"))
+(treesit-install-language-grammar 'templ)
+(use-package wgrep
+  :ensure t
+  :bind (:map grep-mode-map
+              ("C-c C-q" . wgrep-change-to-wgrep-mode)
+         :map occur-mode-map
+              ("C-c C-q" . wgrep-change-to-wgrep-mode))
+  :config
+  ;; Optional: automatically save the files after you press C-c C-c
+  (setq wgrep-auto-save-buffer t))
 
 (use-package dumb-jump
   :hook (xref-backend-functions . dumb-jump-xref-activate)
@@ -2027,7 +2095,6 @@
   :ensure t   ;Auto-install the package from Melpa
   :pin melpa  ;`package-archives' should already have ("melpa" . "https://melpa.org/packages/")
   :after ox)
-
 
 (load (expand-file-name "~/.quicklisp/slime-helper.el")) ;; add slime for elisp
 (setq inferior-lisp-program "sbcl")  ;; interpreter for sbcl

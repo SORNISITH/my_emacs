@@ -58,6 +58,7 @@
 (global-set-key (kbd "C-=") 'quickrun)
 (global-set-key (kbd "M-p") 'next-buffer)
 (global-set-key (kbd "M-n") 'previous-buffer)
+(global-set-key (kbd "<f5>") 'project-compile)
+(global-set-key (kbd "<f6>") 'consult-fd)
 
-
-(set-face-attribute 'default nil :height 170  :family "Iosevka")
+(set-face-attribute 'default nil :height 240  :family "Iosevka")

@@ -3,4 +3,5 @@
 (setq user-emacs-directory (expand-file-name "var-new/" minimal-emacs-user-directory))
 (setq package-user-dir (expand-file-name "elpa" user-emacs-directory))
 (setq debug-on-error t)
-(setq minimal-emacs-gc-cons-threshold (* 64 1024 1024))
+(setq minimal-emacs-gc-cons-threshold (* 120 1024 1024))
+(setq read-process-output-max (* 24 1024 1024))  ; 24 MB (my personal favorite)
