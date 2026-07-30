@@ -405,7 +405,7 @@
   :straight t
   :defer t
   :hook (kubed-display-resource-mode . yaml-mode)
-;  :hook (yaml-mode . apheleia-mode)
+                                        ;  :hook (yaml-mode . apheleia-mode)
   :mode "\\.yml\\'"
   :mode "\\.yaml\\'")
 
@@ -987,6 +987,11 @@
   ;;  (add-to-list 'major-mode-remap-alist mapping))
   :config
   (os/setup-install-grammars))
+
+
+(add-to-list 'treesit-language-source-alist
+             '(templ "https://github.com/vrischmann/tree-sitter-templ"))
+(treesit-install-language-grammar 'templ)
 
 
 (use-package combobulate
@@ -1745,9 +1750,9 @@
          (go-mode . lsp-deferred)
          (web-mode . lsp-deferred)
          (tsx-ts-mode . lsp-deferred)
+         (templ-ts-mode . lsp-deferred)
          (typescript-ts-mode . lsp-deferred)
          ;; (python-mode . lsp-deferred)
-         (templ-ts-mode . lsp-deferred)
          ;; (python-ts-mode . lsp-deferred)
          )
   :commands (lsp lsp-deferred)
@@ -1829,23 +1834,6 @@
   (add-hook 'lsp-completion-mode-hook #'my/lsp-capf-with-snippets)
   )
 
-(with-eval-after-load 'lsp-mode
-  (add-to-list 'lsp-language-id-configuration
-               '(templ-ts-mode . "templ"))
-
-  (lsp-register-client
-   (make-lsp-client
-    :new-connection (lsp-stdio-connection
-                     (lambda ()
-                       (list (executable-find "templ") "lsp")))
-    :activation-fn (lsp-activate-on "templ")
-    :server-id 'templ
-    :priority 1)))
-;; Workaround for lsp-ts-query bug: `#'nil' used as predicate crashes on load
-
-;; (with-eval-after-load 'lsp-ts-query
-;;   (setq lsp-ts-query-parser-install-directories
-;;         (vector (expand-file-name (locate-user-emacs-file "tree-sitter")))))
 
 (use-package lsp-pyright
   :straight t
@@ -1855,17 +1843,9 @@
   (add-hook 'python-ts-mode-hook
             (lambda () (require 'lsp-pyright) (lsp-deferred))))
 
-;; (with-eval-after-load 'lsp-mode
-;;   (lsp-register-client
-;;    (make-lsp-client
-;;     :new-connection (lsp-stdio-connection "templ")
-;;     :major-modes '(templ-ts-mode)
-;;     :server-id 'templ-ls
-;;     :activation-fn (lsp-activate-on "templ"))))
-
-
 
 (setq web-mode-enable-auto-indentation nil)
+
 (setq lsp-enable-indentation nil)
 
 (use-package lsp-tailwindcss
@@ -1874,6 +1854,7 @@
   :init (setq lsp-tailwindcss-add-on-mode t)
   :config
   (setq lsp-tailwindcss-add-on-mode t)
+  (setq lsp-tailwindcss-add-all-modes t)
   (setq lsp-tailwindcss-server-path "/home/nzvoid/.npm-global/bin/tailwindcss-language-server")
   (dolist (tw-major-mode
            '(web-mode
@@ -1881,14 +1862,38 @@
              css-mode
              css-ts-mode
              typescript-mode
-             templ-ts-mode
              typescript-ts-mode
+             templ-ts-mode
              tsx-ts-mode
              html-mode
              js2-mode
              js-ts-mode))
     (add-to-list 'lsp-tailwindcss-major-modes tw-major-mode))
   )
+
+
+;; 3. Automatically start both LSP clients when opening a .templ file
+(add-hook 'templ-ts-mode-hook
+          (lambda ()
+            (lsp-deferred)))
+
+
+
+(use-package web-mode
+  :mode "\\.templ\\'"
+  :config
+  (setq web-mode-engines-alist
+        '(("go" . "\\.templ\\'")))
+  ;; Optional adjustments for web-mode indentation
+  (setq web-mode-markup-indent-offset 2)
+  (setq web-mode-code-indent-offset 2))
+
+(add-hook 'web-mode-hook
+          (lambda ()
+            ;; Bind your templ LSP client here if web-mode is used instead of ts-mode
+            (when (string-equal "templ" (file-name-extension buffer-file-name))
+              (lsp))))
+
 (use-package lsp-eslint
   :straight (:type built-in)
   :after lsp-mode)
@@ -1917,29 +1922,29 @@
 (setq lsp-file-watch-ignored-files
       '("[/\\\\]\\.\\(json\\|md\\|txt\\)$"
         "[/\\\\]node_modules[/\\\\]"
-    "[/\\\\]\\.git\\'" "[/\\\\]\\.github\\'" "[/\\\\]\\.gitlab\\'"
-    "[/\\\\]\\.circleci\\'" "[/\\\\]\\.hg\\'" "[/\\\\]\\.bzr\\'" "[/\\\\]_darcs\\'"
-    "[/\\\\]\\.svn\\'" "[/\\\\]_FOSSIL_\\'" "[/\\\\]\\.jj\\'" "[/\\\\]\\.idea\\'"
-    "[/\\\\]\\.ensime_cache\\'" "[/\\\\]\\.eunit\\'" "[/\\\\]node_modules"
-    "[/\\\\]\\.yarn\\'" "[/\\\\]\\.turbo\\'" "[/\\\\]\\.fslckout\\'"
-    "[/\\\\]\\.tox\\'" "[/\\\\]\\.nox\\'" "[/\\\\]dist\\'"
-    "[/\\\\]dist-newstyle\\'" "[/\\\\]\\.hifiles\\'" "[/\\\\]\\.hiefiles\\'"
-    "[/\\\\]\\.stack-work\\'" "[/\\\\]\\.bloop\\'" "[/\\\\]\\.bsp\\'"
-    "[/\\\\]\\.metals\\'" "[/\\\\]target\\'" "[/\\\\]\\.ccls-cache\\'"
-    "[/\\\\]\\.vs\\'" "[/\\\\]\\.vscode\\'" "[/\\\\]\\.venv\\'"
-    "[/\\\\]\\.mypy_cache\\'" "[/\\\\]\\.pytest_cache\\'" "[/\\\\]\\.build\\'"
-    "[/\\\\]__pycache__\\'" "[/\\\\]site-packages\\'" "[/\\\\].pyenv\\'"
-    "[/\\\\]\\.deps\\'" "[/\\\\]build-aux\\'" "[/\\\\]autom4te.cache\\'"
-    "[/\\\\]\\.reference\\'" "[/\\\\]bazel-[^/\\\\]+\\'"
-    "[/\\\\]\\.cache[/\\\\]lsp-csharp\\'" "[/\\\\]\\.meta\\'" "[/\\\\]\\.nuget\\'"
-    "[/\\\\]\\.lake\\'" "[/\\\\]Library\\'" "[/\\\\]\\.lsp\\'"
-    "[/\\\\]\\.clj-kondo\\'" "[/\\\\]\\.shadow-cljs\\'" "[/\\\\]\\.babel_cache\\'"
-    "[/\\\\]\\.cpcache\\'" "[/\\\\]\\checkouts\\'" "[/\\\\]\\.gradle\\'"
-    "[/\\\\]\\.m2\\'" "[/\\\\]bin/Debug\\'" "[/\\\\]obj\\'" "[/\\\\]_opam\\'"
-    "[/\\\\]_build\\'" "[/\\\\]\\.elixir_ls\\'" "[/\\\\]\\.elixir-tools\\'"
-    "[/\\\\]\\.terraform\\'" "[/\\\\]\\.terragrunt-cache\\'" "[/\\\\]\\result"
-    "[/\\\\]\\result-bin" "[/\\\\]\\.direnv\\'" "[/\\\\]\\.devenv\\'"
-))
+        "[/\\\\]\\.git\\'" "[/\\\\]\\.github\\'" "[/\\\\]\\.gitlab\\'"
+        "[/\\\\]\\.circleci\\'" "[/\\\\]\\.hg\\'" "[/\\\\]\\.bzr\\'" "[/\\\\]_darcs\\'"
+        "[/\\\\]\\.svn\\'" "[/\\\\]_FOSSIL_\\'" "[/\\\\]\\.jj\\'" "[/\\\\]\\.idea\\'"
+        "[/\\\\]\\.ensime_cache\\'" "[/\\\\]\\.eunit\\'" "[/\\\\]node_modules"
+        "[/\\\\]\\.yarn\\'" "[/\\\\]\\.turbo\\'" "[/\\\\]\\.fslckout\\'"
+        "[/\\\\]\\.tox\\'" "[/\\\\]\\.nox\\'" "[/\\\\]dist\\'"
+        "[/\\\\]dist-newstyle\\'" "[/\\\\]\\.hifiles\\'" "[/\\\\]\\.hiefiles\\'"
+        "[/\\\\]\\.stack-work\\'" "[/\\\\]\\.bloop\\'" "[/\\\\]\\.bsp\\'"
+        "[/\\\\]\\.metals\\'" "[/\\\\]target\\'" "[/\\\\]\\.ccls-cache\\'"
+        "[/\\\\]\\.vs\\'" "[/\\\\]\\.vscode\\'" "[/\\\\]\\.venv\\'"
+        "[/\\\\]\\.mypy_cache\\'" "[/\\\\]\\.pytest_cache\\'" "[/\\\\]\\.build\\'"
+        "[/\\\\]__pycache__\\'" "[/\\\\]site-packages\\'" "[/\\\\].pyenv\\'"
+        "[/\\\\]\\.deps\\'" "[/\\\\]build-aux\\'" "[/\\\\]autom4te.cache\\'"
+        "[/\\\\]\\.reference\\'" "[/\\\\]bazel-[^/\\\\]+\\'"
+        "[/\\\\]\\.cache[/\\\\]lsp-csharp\\'" "[/\\\\]\\.meta\\'" "[/\\\\]\\.nuget\\'"
+        "[/\\\\]\\.lake\\'" "[/\\\\]Library\\'" "[/\\\\]\\.lsp\\'"
+        "[/\\\\]\\.clj-kondo\\'" "[/\\\\]\\.shadow-cljs\\'" "[/\\\\]\\.babel_cache\\'"
+        "[/\\\\]\\.cpcache\\'" "[/\\\\]\\checkouts\\'" "[/\\\\]\\.gradle\\'"
+        "[/\\\\]\\.m2\\'" "[/\\\\]bin/Debug\\'" "[/\\\\]obj\\'" "[/\\\\]_opam\\'"
+        "[/\\\\]_build\\'" "[/\\\\]\\.elixir_ls\\'" "[/\\\\]\\.elixir-tools\\'"
+        "[/\\\\]\\.terraform\\'" "[/\\\\]\\.terragrunt-cache\\'" "[/\\\\]\\result"
+        "[/\\\\]\\result-bin" "[/\\\\]\\.direnv\\'" "[/\\\\]\\.devenv\\'"
+        ))
 
 
 (setq lsp-enable-on-type-formatting nil)
@@ -2048,23 +2053,47 @@
   (insert "\\[ \\]")
   (backward-char 3))
 
-(use-package templ-ts-mode
-  :ensure t
-  :mode ("\\.templ\\'" . templ-ts-mode))
 
 
-(add-to-list 'treesit-language-source-alist
-             '(templ "https://github.com/vrischmann/tree-sitter-templ"))
-(treesit-install-language-grammar 'templ)
 (use-package wgrep
   :ensure t
   :bind (:map grep-mode-map
               ("C-c C-q" . wgrep-change-to-wgrep-mode)
-         :map occur-mode-map
+              :map occur-mode-map
               ("C-c C-q" . wgrep-change-to-wgrep-mode))
   :config
   ;; Optional: automatically save the files after you press C-c C-c
   (setq wgrep-auto-save-buffer t))
+
+
+(use-package templ-ts-mode
+  :mode "\\.templ\\'"
+  :config
+  (with-eval-after-load 'lsp-mode
+    ;; Map templ-ts-mode to the "templ" language ID for templ-lsp
+    (add-to-list 'lsp-language-id-configuration '(templ-ts-mode . "templ"))
+
+    ;; Register the templ language server
+    (lsp-register-client
+     (make-lsp-client
+      :new-connection (lsp-stdio-connection
+                       (lambda ()
+                         (list (executable-find "templ") "lsp")))
+      :activation-fn (lsp-activate-on "templ")
+      :server-id 'templ
+      :priority 1))))
+
+;; Configure Tailwind CSS for templ files
+(use-package lsp-tailwindcss
+  :after lsp-mode
+  :init
+  (setq lsp-tailwindcss-add-all-modes t)
+  (with-eval-after-load 'lsp-mode
+    (add-to-list 'lsp-language-id-configuration '(templ-ts-mode . "html"))))
+
+;; Automatically start LSP when opening .templ files
+(add-hook 'templ-ts-mode-hook #'lsp-deferred)
+
 
 (use-package dumb-jump
   :hook (xref-backend-functions . dumb-jump-xref-activate)
