@@ -1734,6 +1734,7 @@
           (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")))
   (add-to-list 'major-mode-remap-alist '(typescript-ts-mode . tsx-ts-mode)))
 
+
 (use-package lsp-mode
   :ensure nil
   :defer t
@@ -1827,6 +1828,20 @@
   (add-hook 'lsp-completion-mode-hook #'my/lsp-capf-with-snippets)
   )
 
+(with-eval-after-load 'lsp-mode
+  (add-to-list 'lsp-language-id-configuration
+               '(templ-ts-mode . "templ"))
+
+  (lsp-register-client
+   (make-lsp-client
+    :new-connection (lsp-stdio-connection
+                     (lambda ()
+                       (list (executable-find "templ") "lsp")))
+    :activation-fn (lsp-activate-on "templ")
+    :server-id 'templ
+    :priority 1)))
+
+
 ;; Workaround for lsp-ts-query bug: `#'nil' used as predicate crashes on load
 (with-eval-after-load 'lsp-ts-query
   (setq lsp-ts-query-parser-install-directories
@@ -1839,18 +1854,13 @@
   (add-hook 'python-ts-mode-hook
             (lambda () (require 'lsp-pyright) (lsp-deferred))))
 
-(use-package lsp-mode
-  :hook ((templ-ts-mode . lsp-deferred)
-         (go-mode . lsp-deferred))
-  :commands lsp)
-
-(with-eval-after-load 'lsp-mode
-  (lsp-register-client
-   (make-lsp-client
-    :new-connection (lsp-stdio-connection "templ")
-    :major-modes '(templ-ts-mode)
-    :server-id 'templ-ls
-    :activation-fn (lsp-activate-on "templ"))))
+;; (with-eval-after-load 'lsp-mode
+;;   (lsp-register-client
+;;    (make-lsp-client
+;;     :new-connection (lsp-stdio-connection "templ")
+;;     :major-modes '(templ-ts-mode)
+;;     :server-id 'templ-ls
+;;     :activation-fn (lsp-activate-on "templ"))))
 
 
 
@@ -1870,6 +1880,7 @@
              css-mode
              css-ts-mode
              typescript-mode
+             templ-ts-mode
              typescript-ts-mode
              tsx-ts-mode
              html-mode
@@ -1977,50 +1988,50 @@
 ;; windows), and Emacs frames. It offers a convenient and effortless way to
 ;; manage Emacs editing sessions and utilizes built-in Emacs functions to
 ;; persist and restore frames.
-(use-package easysession
-  :commands (easysession-switch-to
-             easysession-save-as
-             easysession-save-mode
-             easysession-load-including-geometry)
-
-  :custom
-  ;;  (easysession-mode-line-misc-info t)  ; Display the session inl the modeline
-  (easysession-save-interval (* 10 60))  ; Save every 10 minutes
-  (setq tab-bar-format '(tab-bar-format-tabs
-                         tab-bar-format-align-right
-                         tab-bar-format-global))
-
-  (add-to-list 'global-mode-string '(:eval (easysession-mode-line-session-name-format)) 'append)
-  :init
-  ;; Key mappings
-  (global-set-key (kbd "C-c ss") #'easysession-save)
-  (global-set-key (kbd "C-c sl") #'easysession-switch-to)
-  (global-set-key (kbd "C-c sL") #'easysession-switch-to-and-restore-geometry)
-  (global-set-key (kbd "C-c sr") #'easysession-rename)
-  (global-set-key (kbd "C-c sR") #'easysession-reset)
-  (global-set-key (kbd "C-c sd") #'easysession-delete)
-
-  (if (fboundp 'easysession-setup)
-      ;; The `easysession-setup' function adds hooks:
-      ;; - To enable automatic session loading during `emacs-startup-hook', or
-      ;;   `server-after-make-frame-hook' when running in daemon mode.
-      ;; - To automatically save the session at regular intervals, and when
-      ;;   Emacs exits.
-      (easysession-setup)
-    ;; Legacy
-    ;; The depth 102 and 103 have been added to to `add-hook' to ensure that the
-    ;; session is loaded after all other packages. (Using 103/102 is
-    ;; particularly useful for those using minimal-emacs.d, where some
-    ;; optimizations restore `file-name-handler-alist` at depth 101 during
-    ;; `emacs-startup-hook`.)
-    (add-hook 'emacs-startup-hook #'easysession-load-including-geometry 102)
-    (add-hook 'emacs-startup-hook #'easysession-save-mode 103)))
-
-(defun my-easysession-only-main-saved ()
-  "Only save the main session."
-  (when (string= "main" (easysession-get-current-session-name))
-    t))
-(setq easysession-save-mode-predicate 'my-easysession-only-main-saved)
+;; (use-package easysession
+;;   :commands (easysession-switch-to
+;;              easysession-save-as
+;;              easysession-save-mode
+;;              easysession-load-including-geometry)
+;; 
+;;   :custom
+;;   ;;  (easysession-mode-line-misc-info t)  ; Display the session inl the modeline
+;;   (easysession-save-interval (* 10 60))  ; Save every 10 minutes
+;;   (setq tab-bar-format '(tab-bar-format-tabs
+;;                          tab-bar-format-align-right
+;;                          tab-bar-format-global))
+;; 
+;;   (add-to-list 'global-mode-string '(:eval (easysession-mode-line-session-name-format)) 'append)
+;;   :init
+;;   ;; Key mappings
+;;   (global-set-key (kbd "C-c ss") #'easysession-save)
+;;   (global-set-key (kbd "C-c sl") #'easysession-switch-to)
+;;   (global-set-key (kbd "C-c sL") #'easysession-switch-to-and-restore-geometry)
+;;   (global-set-key (kbd "C-c sr") #'easysession-rename)
+;;   (global-set-key (kbd "C-c sR") #'easysession-reset)
+;;   (global-set-key (kbd "C-c sd") #'easysession-delete)
+;; 
+;;   (if (fboundp 'easysession-setup)
+;;       ;; The `easysession-setup' function adds hooks:
+;;       ;; - To enable automatic session loading during `emacs-startup-hook', or
+;;       ;;   `server-after-make-frame-hook' when running in daemon mode.
+;;       ;; - To automatically save the session at regular intervals, and when
+;;       ;;   Emacs exits.
+;;       (easysession-setup)
+;;     ;; Legacy
+;;     ;; The depth 102 and 103 have been added to to `add-hook' to ensure that the
+;;     ;; session is loaded after all other packages. (Using 103/102 is
+;;     ;; particularly useful for those using minimal-emacs.d, where some
+;;     ;; optimizations restore `file-name-handler-alist` at depth 101 during
+;;     ;; `emacs-startup-hook`.)
+;;     (add-hook 'emacs-startup-hook #'easysession-load-including-geometry 102)
+;;     (add-hook 'emacs-startup-hook #'easysession-save-mode 103)))
+;; 
+;; (defun my-easysession-only-main-saved ()
+;;   "Only save the main session."
+;;   (when (string= "main" (easysession-get-current-session-name))
+;;     t))
+;; (setq easysession-save-mode-predicate 'my-easysession-only-main-saved)
 
 
 ;; EAF framework --------------------------------------------------------
@@ -2037,8 +2048,10 @@
   (backward-char 3))
 
 (use-package templ-ts-mode
-  :straight (templ-ts-mode :type git :host github :repo "danderson/templ-ts-mode")
-  :mode "\\.templ\\'")
+  :ensure t
+  :mode ("\\.templ\\'" . templ-ts-mode))
+
+
 (add-to-list 'treesit-language-source-alist
              '(templ "https://github.com/vrischmann/tree-sitter-templ"))
 (treesit-install-language-grammar 'templ)
