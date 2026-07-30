@@ -479,7 +479,6 @@
   :hook ((css-mode  . emmet-mode)
          (html-mode . emmet-mode)
          (web-mode  . emmet-mode)
-         (templ-ts-mode  . emmet-mode)
          (sass-mode . emmet-mode)
          (scss-mode . emmet-mode)
          (web-mode  . emmet-mode))
@@ -493,7 +492,8 @@
 ;; editing features.
 (use-package go-mode
   :commands go-mode
-  :mode ("\\.go\\'" . go-mode))
+  :mode ("\\.go\\'" . go-mode)
+)
 
 ;; Support for Rust
 (use-package rust-mode
@@ -594,8 +594,6 @@
   (yas-field-highlight-face ((t (:background "#2a2a3a")))))
 
 
-(use-package yasnippet
-  :hook (templ-ts-mode . yas-minor-mode))
 (use-package yasnippet-snippets
   :straight t
   :after yasnippet
@@ -1726,7 +1724,8 @@
 (use-package web-mode
   :ensure t
   :mode (("\\.tsx\\'" . web-mode)
-         ("\\.jsx\\'" . web-mode))
+         ("\\.jsx\\'" . web-mode)
+         )
   :config
   (setq web-mode-markup-indent-offset 2)
   (setq web-mode-css-indent-offset 2)
@@ -1740,6 +1739,9 @@
           (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")))
   (add-to-list 'major-mode-remap-alist '(typescript-ts-mode . tsx-ts-mode)))
 
+(use-package templ-ts-mode
+  :ensure t
+  :mode ("\\.templ\\'" . templ-ts-mode))
 
 (use-package lsp-mode
   :ensure nil
@@ -1747,10 +1749,10 @@
   :bind (("C-c l s" . lsp))
   :hook (
          (go-ts-mode . lsp-deferred)
+         (templ-ts-mode . lsp-deferred)
          (go-mode . lsp-deferred)
          (web-mode . lsp-deferred)
          (tsx-ts-mode . lsp-deferred)
-         (templ-ts-mode . lsp-deferred)
          (typescript-ts-mode . lsp-deferred)
          ;; (python-mode . lsp-deferred)
          ;; (python-ts-mode . lsp-deferred)
@@ -1835,6 +1837,7 @@
   )
 
 
+
 (use-package lsp-pyright
   :straight t
   :defer t
@@ -1859,40 +1862,48 @@
   (dolist (tw-major-mode
            '(web-mode
              web-ts-mode
+             templ-ts-mode
              css-mode
              css-ts-mode
              typescript-mode
              typescript-ts-mode
-             templ-ts-mode
              tsx-ts-mode
              html-mode
              js2-mode
              js-ts-mode))
-    (add-to-list 'lsp-tailwindcss-major-modes tw-major-mode))
-  )
+    (add-to-list 'lsp-tailwindcss-major-modes tw-major-mode)
+    (add-to-list 'lsp-tailwindcss-major-modes 'templ-ts-mode)
+    )
+)
 
 
-;; 3. Automatically start both LSP clients when opening a .templ file
-(add-hook 'templ-ts-mode-hook
-          (lambda ()
-            (lsp-deferred)))
+(with-eval-after-load 'lsp-mode
+  ;; language id
+  (add-to-list 'lsp-language-id-configuration
+               '(templ-ts-mode . "templ"))
 
+  ;; Templ language server
+  (lsp-register-client
+   (make-lsp-client
+    :new-connection (lsp-stdio-connection '("templ" "lsp"))
+    :activation-fn (lsp-activate-on "templ")
+    :server-id 'templ-lsp
+    :priority 1))
 
+  ;; Tailwind: treat templ as html
+  (lsp-register-custom-settings
+   '(("tailwindCSS.includeLanguages" (("templ" . "html")) t)))
 
-(use-package web-mode
-  :mode "\\.templ\\'"
-  :config
-  (setq web-mode-engines-alist
-        '(("go" . "\\.templ\\'")))
-  ;; Optional adjustments for web-mode indentation
-  (setq web-mode-markup-indent-offset 2)
-  (setq web-mode-code-indent-offset 2))
+  ;; Optional: also start HTML language server on .templ
+  (lsp-register-client
+   (make-lsp-client
+    :new-connection (lsp-stdio-connection
+                     '("vscode-html-language-server" "--stdio"))
+    :activation-fn (lsp-activate-on "templ")
+    :server-id 'html-ls-templ
+    :priority 0
+    :add-on? t)))
 
-(add-hook 'web-mode-hook
-          (lambda ()
-            ;; Bind your templ LSP client here if web-mode is used instead of ts-mode
-            (when (string-equal "templ" (file-name-extension buffer-file-name))
-              (lsp))))
 
 (use-package lsp-eslint
   :straight (:type built-in)
@@ -2066,35 +2077,6 @@
   (setq wgrep-auto-save-buffer t))
 
 
-(use-package templ-ts-mode
-  :mode "\\.templ\\'"
-  :config
-  (with-eval-after-load 'lsp-mode
-    ;; Map templ-ts-mode to the "templ" language ID for templ-lsp
-    (add-to-list 'lsp-language-id-configuration '(templ-ts-mode . "templ"))
-
-    ;; Register the templ language server
-    (lsp-register-client
-     (make-lsp-client
-      :new-connection (lsp-stdio-connection
-                       (lambda ()
-                         (list (executable-find "templ") "lsp")))
-      :activation-fn (lsp-activate-on "templ")
-      :server-id 'templ
-      :priority 1))))
-
-;; Configure Tailwind CSS for templ files
-(use-package lsp-tailwindcss
-  :after lsp-mode
-  :init
-  (setq lsp-tailwindcss-add-all-modes t)
-  (with-eval-after-load 'lsp-mode
-    (add-to-list 'lsp-language-id-configuration '(templ-ts-mode . "html"))))
-
-;; Automatically start LSP when opening .templ files
-(add-hook 'templ-ts-mode-hook #'lsp-deferred)
-
-
 (use-package dumb-jump
   :hook (xref-backend-functions . dumb-jump-xref-activate)
   :custom
@@ -2108,8 +2090,6 @@
 			                  ;; Use spaces for indent
 			                  (setq-local indent-tabs-mode nil)))
 
-;; DISABLE GPG anoying password
-;; 1. Completely disable auth-sources for TRAMP
 (connection-local-set-profile-variables
  'remote-without-auth-sources
  '((auth-sources . nil)))
