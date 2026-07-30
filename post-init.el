@@ -916,6 +916,7 @@
          ("\\.mjs\\'" . typescript-ts-mode)
          ("\\.mts\\'" . typescript-ts-mode)
          ("\\.cjs\\'" . typescript-ts-mode)
+         ("\\.templ\\'" . templ-ts-mode)
          ("\\.ts\\'" . typescript-ts-mode)
          ("\\.jsx\\'" . tsx-ts-mode)
          ("\\.json\\'" . json-ts-mode)
@@ -938,7 +939,7 @@
                (kotlin "https://github.com/fwcd/tree-sitter-kotlin")
                (json . ("https://github.com/tree-sitter/tree-sitter-json" "v0.20.2"))
                (python . ("https://github.com/tree-sitter/tree-sitter-python" "v0.20.4"))
-               (go "https://github.com/tree-sitter/tree-sitter-go" "v0.20.0")
+               (go "https://github.com/tree-sitter/tree-sitter-go" "v0.25.0")
                (markdown "https://github.com/ikatyang/tree-sitter-markdown")
                (make "https://github.com/alemuller/tree-sitter-make")
                (elisp "https://github.com/Wilfred/tree-sitter-elisp")
@@ -1840,12 +1841,12 @@
     :activation-fn (lsp-activate-on "templ")
     :server-id 'templ
     :priority 1)))
-
-
 ;; Workaround for lsp-ts-query bug: `#'nil' used as predicate crashes on load
-(with-eval-after-load 'lsp-ts-query
-  (setq lsp-ts-query-parser-install-directories
-        (vector (expand-file-name (locate-user-emacs-file "tree-sitter")))))
+
+;; (with-eval-after-load 'lsp-ts-query
+;;   (setq lsp-ts-query-parser-install-directories
+;;         (vector (expand-file-name (locate-user-emacs-file "tree-sitter")))))
+
 (use-package lsp-pyright
   :straight t
   :defer t
