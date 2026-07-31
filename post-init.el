@@ -493,7 +493,7 @@
 (use-package go-mode
   :commands go-mode
   :mode ("\\.go\\'" . go-mode)
-)
+  )
 
 ;; Support for Rust
 (use-package rust-mode
@@ -1739,9 +1739,6 @@
           (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")))
   (add-to-list 'major-mode-remap-alist '(typescript-ts-mode . tsx-ts-mode)))
 
-(use-package templ-ts-mode
-  :ensure t
-  :mode ("\\.templ\\'" . templ-ts-mode))
 
 (use-package lsp-mode
   :ensure nil
@@ -1749,9 +1746,9 @@
   :bind (("C-c l s" . lsp))
   :hook (
          (go-ts-mode . lsp-deferred)
-         (templ-ts-mode . lsp-deferred)
          (go-mode . lsp-deferred)
          (web-mode . lsp-deferred)
+         (templ-ts-mode . lsp-deferred)
          (tsx-ts-mode . lsp-deferred)
          (typescript-ts-mode . lsp-deferred)
          ;; (python-mode . lsp-deferred)
@@ -1836,7 +1833,21 @@
   (add-hook 'lsp-completion-mode-hook #'my/lsp-capf-with-snippets)
   )
 
+(use-package templ-ts-mode
+  :ensure t
+  :mode "\\.templ\\'")
 
+
+(with-eval-after-load 'lsp-mode
+  (add-to-list 'lsp-language-id-configuration '(templ-ts-mode . "templ"))
+
+  (lsp-register-client
+   (make-lsp-client
+    :new-connection (lsp-stdio-connection '("templ" "lsp"))
+    :activation-fn (lsp-activate-on "templ")
+    :server-id 'templ-ls)))
+
+(add-hook 'templ-ts-mode-hook #'lsp-deferred)
 
 (use-package lsp-pyright
   :straight t
@@ -1857,13 +1868,12 @@
   :init (setq lsp-tailwindcss-add-on-mode t)
   :config
   (setq lsp-tailwindcss-add-on-mode t)
-  (setq lsp-tailwindcss-add-all-modes t)
   (setq lsp-tailwindcss-server-path "/home/nzvoid/.npm-global/bin/tailwindcss-language-server")
   (dolist (tw-major-mode
            '(web-mode
              web-ts-mode
-             templ-ts-mode
              css-mode
+             templ-ts-mode
              css-ts-mode
              typescript-mode
              typescript-ts-mode
@@ -1872,37 +1882,11 @@
              js2-mode
              js-ts-mode))
     (add-to-list 'lsp-tailwindcss-major-modes tw-major-mode)
-    (add-to-list 'lsp-tailwindcss-major-modes 'templ-ts-mode)
+    (add-to-list 'lsp-language-id-configuration '(templ-ts-mode . "templ"))
+    ;; extend tailwind's activation to templ buffers
+    (add-to-list 'lsp-tailwindcss-major-modes 'templ-ts-mode)    
     )
-)
-
-
-(with-eval-after-load 'lsp-mode
-  ;; language id
-  (add-to-list 'lsp-language-id-configuration
-               '(templ-ts-mode . "templ"))
-
-  ;; Templ language server
-  (lsp-register-client
-   (make-lsp-client
-    :new-connection (lsp-stdio-connection '("templ" "lsp"))
-    :activation-fn (lsp-activate-on "templ")
-    :server-id 'templ-lsp
-    :priority 1))
-
-  ;; Tailwind: treat templ as html
-  (lsp-register-custom-settings
-   '(("tailwindCSS.includeLanguages" (("templ" . "html")) t)))
-
-  ;; Optional: also start HTML language server on .templ
-  (lsp-register-client
-   (make-lsp-client
-    :new-connection (lsp-stdio-connection
-                     '("vscode-html-language-server" "--stdio"))
-    :activation-fn (lsp-activate-on "templ")
-    :server-id 'html-ls-templ
-    :priority 0
-    :add-on? t)))
+  )
 
 
 (use-package lsp-eslint
