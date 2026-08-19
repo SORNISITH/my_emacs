@@ -30,11 +30,30 @@
   (interactive)
   (dired "~/.emacs.d/"))
 
+(defun nz-nginx-img ()
+  (interactive)
+  (dired "/var/www/cloud_store/img/"))
+
+(defun nz-work ()
+  (interactive)
+  (dired "~/nz_work_space/"))
+
+(defun nz-nginx-conf ()
+  (interactive)
+  (dired "/opt/nginx-bt/conf"))
+
 (defun nz-cheat ()
   (interactive)
   (require 'consult)
   (dired "~/.emacs.d/cheatsheet/")
   (run-at-time 0.1 nil #'consult-line))
+
+
+(setq sql-postgres-login-params
+      '((user :default "root")
+        (database :default "csdbn")
+        (server :default "172.18.0.3")
+        (port :default 5432)))
 
 ;; GLOBAL KEYS
 (global-unset-key (kbd "C-z"))

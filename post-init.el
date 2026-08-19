@@ -479,6 +479,7 @@
   :hook ((css-mode  . emmet-mode)
          (html-mode . emmet-mode)
          (web-mode  . emmet-mode)
+         (templ-ts-mode  . emmet-mode)
          (sass-mode . emmet-mode)
          (scss-mode . emmet-mode)
          (web-mode  . emmet-mode))
@@ -585,7 +586,7 @@
          :map yas-keymap
          ("C-i" . yas-next-field-or-maybe-expand))
   :mode ("/\\.emacs\\.d/snippets/" . snippet-mode)
-  :hook ((prog-mode org-mode) . yas-minor-mode-on)
+  :hook ((prog-mode  org-mode) . yas-minor-mode-on)
   :custom
   (yas-prompt-functions '(yas-completing-prompt yas-no-prompt))
   (yas-triggers-in-field t)
@@ -1847,7 +1848,6 @@
     :activation-fn (lsp-activate-on "templ")
     :server-id 'templ-ls)))
 
-(add-hook 'templ-ts-mode-hook #'lsp-deferred)
 
 (use-package lsp-pyright
   :straight t
@@ -1873,7 +1873,6 @@
            '(web-mode
              web-ts-mode
              css-mode
-             templ-ts-mode
              css-ts-mode
              typescript-mode
              typescript-ts-mode
@@ -1882,9 +1881,6 @@
              js2-mode
              js-ts-mode))
     (add-to-list 'lsp-tailwindcss-major-modes tw-major-mode)
-    (add-to-list 'lsp-language-id-configuration '(templ-ts-mode . "templ"))
-    ;; extend tailwind's activation to templ buffers
-    (add-to-list 'lsp-tailwindcss-major-modes 'templ-ts-mode)    
     )
   )
 
@@ -2102,6 +2098,11 @@
   :ensure t   ;Auto-install the package from Melpa
   :pin melpa  ;`package-archives' should already have ("melpa" . "https://melpa.org/packages/")
   :after ox)
+
+
+(use-package pg :vc (:url "https://github.com/emarsden/pg-el/"))
+(use-package pgmacs :vc (:url "https://github.com/emarsden/pgmacs/"))
+
 
 (load (expand-file-name "~/.quicklisp/slime-helper.el")) ;; add slime for elisp
 (setq inferior-lisp-program "sbcl")  ;; interpreter for sbcl
